@@ -101,8 +101,11 @@ def build_on_cuda_platform():
     from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
     from csrc.build_utils import build_plan, grouped_build_extension, parse_cuda_arch_list
 
-    if CUDA_HOME is None:
-        raise RuntimeError("A CUDA toolkit is required to build DeepSelect")
+    assert CUDA_HOME is not None, "PyTorch must be compiled with CUDA support"
+
+    def append_nvcc_threads(nvcc_extra_args):
+        nvcc_threads = os.getenv("NVCC_THREADS") or "16"
+        return nvcc_extra_args + ["--threads", nvcc_threads]
 
     nvcc_version = subprocess.check_output(
         [os.path.join(CUDA_HOME, "bin", "nvcc"), "--version"],
@@ -115,9 +118,9 @@ def build_on_cuda_platform():
         os.getenv("DEEP_SELECT_CUDA_ARCH_LIST"), (major, minor)
     )
     sources, macros, group_flags = build_plan(CUDA_SOURCES, architectures)
-    print(f"DeepSelect CUDA architectures: {architectures}")
 
-    this_dir = Path(__file__).resolve().parent
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+
     ext_modules = [CUDAExtension(
         name="deep_select.deep_select_cuda",
         sources=sources,
@@ -126,7 +129,7 @@ def build_on_cuda_platform():
         extra_compile_args={
             # Target the torch 2.10 stable ABI (minimum supported torch version)
             "cxx": ["-O3", "-std=c++20", "-DNDEBUG", "-Wno-deprecated-declarations", "-DTORCH_TARGET_VERSION=0x020a000000000000", "-DUSE_CUDA"],
-            "nvcc": [
+            "nvcc": append_nvcc_threads([
                 "-O3",
                 "-std=c++20",
                 "-DTORCH_TARGET_VERSION=0x020a000000000000",
@@ -141,19 +144,16 @@ def build_on_cuda_platform():
                 "--ptxas-options=-v,--register-usage-level=10,--warn-on-spills,--warn-on-double-precision-use",
                 "-lineinfo",
                 "--source-in-ptx",
-                "--threads", os.getenv("NVCC_THREADS") or "16",
-            ],
+            ])
         },
         include_dirs=[
-            this_dir / "csrc",
-            this_dir / "csrc" / "3rdparty" / "cutlass" / "include",
-            this_dir / "csrc" / "3rdparty" / "kerutils" / "include",
-            Path(CUDA_HOME) / "include" / "cccl",
+            Path(this_dir) / "csrc",
+            Path(this_dir) / "csrc" / "3rdparty" / "cutlass" / "include",
+            Path(this_dir) / "csrc" / "3rdparty" / "kerutils" / "include",
             Path(CUDA_HOME) / "targets" / "x86_64-linux" / "include" / "cccl",
             Path(CUDA_HOME) / "targets" / "sbsa-linux" / "include" / "cccl",
         ],
         extra_link_args=[
-            f'-L{Path(CUDA_HOME) / "lib" / "stubs"}',
             f'-L{Path(CUDA_HOME) / "targets" / "x86_64-linux" / "lib" / "stubs"}',
             f'-L{Path(CUDA_HOME) / "targets" / "sbsa-linux" / "lib" / "stubs"}',
             "-lcuda",
