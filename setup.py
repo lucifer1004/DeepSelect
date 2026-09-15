@@ -144,14 +144,14 @@ def build_on_cuda_platform():
                 "--threads", os.getenv("NVCC_THREADS") or "16",
             ],
         },
-        include_dirs=[str(path) for path in [
+        include_dirs=[
             this_dir / "csrc",
             this_dir / "csrc" / "3rdparty" / "cutlass" / "include",
             this_dir / "csrc" / "3rdparty" / "kerutils" / "include",
             Path(CUDA_HOME) / "include" / "cccl",
             Path(CUDA_HOME) / "targets" / "x86_64-linux" / "include" / "cccl",
             Path(CUDA_HOME) / "targets" / "sbsa-linux" / "include" / "cccl",
-        ]],
+        ],
         extra_link_args=[
             f'-L{Path(CUDA_HOME) / "lib" / "stubs"}',
             f'-L{Path(CUDA_HOME) / "targets" / "x86_64-linux" / "lib" / "stubs"}',
