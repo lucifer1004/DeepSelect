@@ -66,8 +66,8 @@ def build_plan(cuda_sources, architectures):
         sources.append(SM120_SOURCE)
     flags = {
         "host": [],
-        "sm100": ["--use_fast_math", "--ftz=false"] + architecture_flags(sm100),
-        "sm120": ["--ftz=false"] + architecture_flags(sm12),
+        "sm100": architecture_flags(sm100),
+        "sm120": architecture_flags(sm12),
     }
     return sources, macros, flags
 

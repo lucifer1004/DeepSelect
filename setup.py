@@ -141,6 +141,8 @@ def build_on_cuda_platform():
                 "-U__CUDA_NO_BFLOAT16_CONVERSIONS__",
                 "--expt-relaxed-constexpr",
                 "--expt-extended-lambda",
+                "--use_fast_math",
+                "--ftz=false",  # Don't flush subnormals to zero, since we're going to use float addition to simulate integer addition (in order to be faster)
                 "--ptxas-options=-v,--register-usage-level=10,--warn-on-spills,--warn-on-double-precision-use",
                 "-lineinfo",
                 "--source-in-ptx",

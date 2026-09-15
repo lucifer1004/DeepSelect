@@ -97,9 +97,10 @@ def test_single_extension_grouped_compile(monkeypatch, tmp_path, entry, expected
     for call in calls[1:]:
         flags = call["cuda_post_cflags"]
         assert "-DTORCH_TARGET_VERSION=0x020a000000000000" in flags
+        assert flags.count("--use_fast_math") == 1
+        assert flags.count("--ftz=false") == 1
+        assert flags.index("--use_fast_math") < flags.index("--ftz=false")
         if "/sm120/" in call["sources"][0]:
-            assert "--use_fast_math" not in flags
-            assert "--ftz=false" in flags
             expected = tuple(item for item in architectures if item[0] in {"120", "121"})
         else:
             expected = tuple(item for item in architectures if item[0] not in {"120", "121"})
